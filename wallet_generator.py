@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import json
-from eth_account import Account
+from solana.keypair import Keypair
 
 def generate_wallet():
-    account = Account.create()
+    keypair = Keypair.generate()
     wallet = {
-        "address": account.address,
-        "private_key": account.key.hex()
+        "public_key": str(keypair.public_key),
+        "secret_key": list(keypair.secret_key)
     }
     return wallet
 
