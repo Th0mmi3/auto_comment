@@ -64,7 +64,6 @@ def create_instance(instance_name, wallet):
     wait_for_operation(operation)
 
 def wait_for_operation(operation):
-    """Wacht tot de instantie-aanmaakoperatie voltooid is."""
     operation_client = compute_v1.ZoneOperationsClient()
     print("Wachten op voltooiing van de operatie...", end="")
     while True:
