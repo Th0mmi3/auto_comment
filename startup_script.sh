@@ -1,6 +1,6 @@
 #!/bin/bash
 
-REPO_DIR="/repo"
+REPO_DIR="/opt/repo"
 GITHUB_REPO="https://github.com/Th0mmi3/auto_comment.git"
 SCRIPT_TO_RUN="wallet_generator.py"
 sudo apt-get update
