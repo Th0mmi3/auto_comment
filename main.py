@@ -10,16 +10,19 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
+# Laad de walletgegevens uit wallet.json
 WALLET_FILE = "wallet.json"
 if not os.path.exists(WALLET_FILE):
     raise Exception("Wallet file not found. Generate one using wallet_generator.py.")
 with open(WALLET_FILE, "r") as f:
     wallet = json.load(f)
-WALLET_ADDRESS = wallet.get("address")
-PRIVATE_KEY = wallet.get("private_key")
+SOLANA_PUBLIC_KEY = wallet.get("public_key")
+SOLANA_SECRET_KEY = wallet.get("secret_key")  # Dit is een lijst met integers
 
+# Configureer logging
 logging.basicConfig(filename="pump_fun_tracker.log", level=logging.INFO, format="%(asctime)s - %(message)s")
 
+# Stel Chrome WebDriver in met een eigen Selenium‑profiel
 chrome_options = Options()
 profile_path = os.path.join(os.getcwd(), "selenium_profile")
 if not os.path.exists(profile_path):
@@ -29,41 +32,44 @@ chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
 chrome_options.add_experimental_option("useAutomationExtension", False)
 
+# Start de WebDriver
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
 tracked_coins = set()
 
 def login_with_wallet():
     """
-    Automatiseert het inloggen via de wallet.
-    Let op: de precieze elementen en stappen hangen af van hoe pump.fun het inlogproces heeft ingericht.
-    Pas de XPaths en logica aan indien nodig.
+    Automatiseert het inloggen met de Solana-wallet.
+    Pas de XPaths en logica hieronder aan zodat ze overeenkomen met de daadwerkelijke pump.fun-pagina.
     """
     try:
         driver.get("https://pump.fun/login")
-        # Wacht tot de knop 'Wallet Login' beschikbaar is (pas XPath indien nodig aan)
+        # Wacht tot de knop 'Wallet Login' beschikbaar is (pas XPath aan indien nodig)
         login_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, '//button[contains(text(), "Wallet Login")]'))
         )
         login_button.click()
         time.sleep(2)
         
-        # Neem aan dat er een invoerveld is voor het invoeren van de private key
-        private_key_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, '//input[@placeholder="Enter your private key"]'))
+        # Stel dat er een invoerveld is om de secret key in te voeren
+        secret_key_input = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, '//input[@placeholder="Enter your secret key"]'))
         )
-        private_key_input.send_keys(PRIVATE_KEY)
+        # Converteer de secret key (lijst) naar een JSON-string (of een ander formaat, afhankelijk van de vereiste invoer)
+        secret_key_str = json.dumps(SOLANA_SECRET_KEY)
+        secret_key_input.send_keys(secret_key_str)
         
         submit_button = driver.find_element(By.XPATH, '//button[contains(text(), "Submit")]')
         submit_button.click()
         time.sleep(5)
-        print(f"Logged in with wallet {WALLET_ADDRESS}")
-        logging.info(f"Logged in with wallet {WALLET_ADDRESS}")
+        print(f"Logged in with Solana wallet {SOLANA_PUBLIC_KEY}")
+        logging.info(f"Logged in with Solana wallet {SOLANA_PUBLIC_KEY}")
     except Exception as e:
         logging.error(f"Wallet login failed: {e}")
         print(f"Wallet login failed: {e}")
 
 def get_coins():
+    """Haalt de coins op van de pump.fun board."""
     try:
         driver.get("https://pump.fun/board")
         time.sleep(5)
@@ -84,6 +90,7 @@ def get_coins():
         return {}
 
 def leave_comment(coin_url):
+    """Bezoekt de coinpagina en plaatst een commentaar."""
     try:
         driver.get(coin_url)
         time.sleep(5)
@@ -118,6 +125,7 @@ def leave_comment(coin_url):
         print(f"❌ Failed to post comment on {coin_url}. Error: {e}")
 
 def track_pump_fun():
+    """Logt in via de wallet en gaat dan de board monitoren."""
     login_with_wallet()
     while True:
         try:
