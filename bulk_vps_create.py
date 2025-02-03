@@ -11,8 +11,8 @@ INSTANCE_TYPE = "e2-micro"
 NUMBER_OF_INSTANCES = 10            
 
 GITHUB_REPO = "https://github.com/Th0mmi3/auto_comment.git"
-REPO_DIR = "/opT/REPO"          
-SCRIPT_TO_RUN = "main.py"            
+REPO_DIR = "/opt/repo"          
+SCRIPT_TO_RUN = "commenter.py" 
 
 def generate_wallet():
     keypair = Keypair.generate()
@@ -21,6 +21,12 @@ def generate_wallet():
         "secret_key": list(keypair.secret_key)
     }
     return wallet
+
+def load_startup_script(filepath):
+    with open(filepath, "r") as f:
+        script = f.read()
+    script = script.format(REPO_DIR=REPO_DIR, GITHUB_REPO=GITHUB_REPO, SCRIPT_TO_RUN=SCRIPT_TO_RUN)
+    return script
 
 def create_instance(instance_name, wallet):
     instance_client = compute_v1.InstancesClient()
@@ -45,7 +51,6 @@ def create_instance(instance_name, wallet):
     instance.network_interfaces = [network_interface]
 
     startup_script = load_startup_script("startup_script.sh")
-
     metadata_item = compute_v1.Items()
     metadata_item.key = "startup-script"
     metadata_item.value = startup_script
@@ -59,6 +64,7 @@ def create_instance(instance_name, wallet):
     wait_for_operation(operation)
 
 def wait_for_operation(operation):
+    """Wacht tot de instantie-aanmaakoperatie voltooid is."""
     operation_client = compute_v1.ZoneOperationsClient()
     print("Wachten op voltooiing van de operatie...", end="")
     while True:
