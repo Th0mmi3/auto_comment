@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 
 REPO_DIR="/repo"
 GITHUB_REPO="https://github.com/Th0mmi3/auto_comment.git"
