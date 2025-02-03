@@ -1,0 +1,8 @@
+
+google-cloud-compute>=0.7.0
+selenium>=4.8.0
+# niggw2e
+webdriver-manager>=3.8.5
+solana>=0.18.0
+pycryptodome>=3.16.0
+python-dotenv>=0.21.0
