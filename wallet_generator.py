@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 import json
-from solana.keypair import Keypair
+from solders.keypair import Keypair
 
 def generate_wallet():
-    keypair = Keypair.generate()
+    keypair = Keypair()
+    pubkey = str(keypair.pubkey())
+    secret_key = list(bytes(keypair))
     wallet = {
-        "public_key": str(keypair.public_key),
-        "secret_key": list(keypair.secret_key)
+        "public_key": pubkey,
+        "secret_key": secret_key
     }
     return wallet
 
