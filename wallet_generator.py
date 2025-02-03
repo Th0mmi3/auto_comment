@@ -4,11 +4,9 @@ from solders.keypair import Keypair
 
 def generate_wallet():
     keypair = Keypair()
-    pubkey = str(keypair.pubkey())
-    secret_key = list(bytes(keypair))
     wallet = {
-        "public_key": pubkey,
-        "secret_key": secret_key
+        "public_key": str(keypair.pubkey()),
+        "secret_key": list(keypair.to_bytes())
     }
     return wallet
 
@@ -18,3 +16,4 @@ if __name__ == "__main__":
         json.dump(wallet, f)
     print("Generated wallet:")
     print(wallet)
+
