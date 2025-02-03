@@ -1,24 +1,34 @@
 from google.cloud import compute_v1
 import time
+import json
+from solana.keypair import Keypair
 
-PROJECT_ID = "#######"
-ZONE = "us-central1-a"
-IMAGE_FAMILY = "debian-11"
-IMAGE_PROJECT = "debian-cloud"
-INSTANCE_TYPE = "e2-micro"
-NUMBER_OF_INSTANCES = 10
+PROJECT_ID = "#######PROJECT_iD######"    
+ZONE = "us-central1-a"               
+IMAGE_FAMILY = "debian-11"         
+IMAGE_PROJECT = "debian-cloud"       
+INSTANCE_TYPE = "e2-micro"           
+NUMBER_OF_INSTANCES = 10            
 
 GITHUB_REPO = "https://github.com/Th0mmi3/auto_comment.git"
-REPO_DIR = "/########"
-SCRIPT_TO_RUN = "main.py"
+REPO_DIR = "/opT/REPO"          
+SCRIPT_TO_RUN = "main.py"            
 
-def create_instance(instance_name):
+def generate_wallet():
+    keypair = Keypair.generate()
+    wallet = {
+        "public_key": str(keypair.public_key),
+        "secret_key": list(keypair.secret_key)
+    }
+    return wallet
+
+def create_instance(instance_name, wallet):
     instance_client = compute_v1.InstancesClient()
 
     image_client = compute_v1.ImagesClient()
     image_response = image_client.get_from_family(project=IMAGE_PROJECT, family=IMAGE_FAMILY)
     source_disk_image = image_response.self_link
-  
+
     instance = compute_v1.Instance()
     instance.name = instance_name
     instance.machine_type = f"zones/{ZONE}/machineTypes/{INSTANCE_TYPE}"
@@ -29,6 +39,7 @@ def create_instance(instance_name):
     disk.initialize_params.source_image = source_disk_image
     disk.initialize_params.disk_size_gb = 10
     instance.disks = [disk]
+
     network_interface = compute_v1.NetworkInterface()
     network_interface.name = "global/networks/default"
     instance.network_interfaces = [network_interface]
@@ -44,7 +55,7 @@ def create_instance(instance_name):
     instance.metadata = metadata
 
     operation = instance_client.insert(project=PROJECT_ID, zone=ZONE, instance_resource=instance)
-    print(f"VM {instance_name} wordt aangemaakt...")
+    print(f"VM {instance_name} wordt aangemaakt met wallet {wallet['public_key']}...")
     wait_for_operation(operation)
 
 def wait_for_operation(operation):
@@ -64,8 +75,9 @@ def wait_for_operation(operation):
 
 def main():
     for i in range(NUMBER_OF_INSTANCES):
-        instance_name = f"vps-{i+1}" 
-        create_instance(instance_name)
+        instance_name = f"vps-{i+1}"
+        wallet = generate_wallet() 
+        create_instance(instance_name, wallet)
 
 if __name__ == "__main__":
     main()
