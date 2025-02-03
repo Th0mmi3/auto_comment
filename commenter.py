@@ -10,19 +10,16 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-# Laad de walletgegevens uit wallet.json
 WALLET_FILE = "wallet.json"
 if not os.path.exists(WALLET_FILE):
-    raise Exception("Wallet file not found. Generate one using wallet_generator.py.")
+    raise Exception("Wallet file not found. Generate one using the wallet generator.")
 with open(WALLET_FILE, "r") as f:
     wallet = json.load(f)
 SOLANA_PUBLIC_KEY = wallet.get("public_key")
-SOLANA_SECRET_KEY = wallet.get("secret_key")  # Dit is een lijst met integers
+SOLANA_SECRET_KEY = wallet.get("secret_key")
 
-# Configureer logging
 logging.basicConfig(filename="pump_fun_tracker.log", level=logging.INFO, format="%(asctime)s - %(message)s")
 
-# Stel Chrome WebDriver in met een eigen Selenium‑profiel
 chrome_options = Options()
 profile_path = os.path.join(os.getcwd(), "selenium_profile")
 if not os.path.exists(profile_path):
@@ -32,7 +29,6 @@ chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
 chrome_options.add_experimental_option("useAutomationExtension", False)
 
-# Start de WebDriver
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
 tracked_coins = set()
@@ -40,25 +36,20 @@ tracked_coins = set()
 def login_with_wallet():
     """
     Automatiseert het inloggen met de Solana-wallet.
-    Pas de XPaths en logica hieronder aan zodat ze overeenkomen met de daadwerkelijke pump.fun-pagina.
+    (Pas de XPaths en logica aan zodat ze overeenkomen met de daadwerkelijke pump.fun-pagina.)
     """
     try:
         driver.get("https://pump.fun/login")
-        # Wacht tot de knop 'Wallet Login' beschikbaar is (pas XPath aan indien nodig)
         login_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, '//button[contains(text(), "Wallet Login")]'))
         )
         login_button.click()
         time.sleep(2)
-        
-        # Stel dat er een invoerveld is om de secret key in te voeren
         secret_key_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, '//input[@placeholder="Enter your secret key"]'))
         )
-        # Converteer de secret key (lijst) naar een JSON-string (of een ander formaat, afhankelijk van de vereiste invoer)
         secret_key_str = json.dumps(SOLANA_SECRET_KEY)
         secret_key_input.send_keys(secret_key_str)
-        
         submit_button = driver.find_element(By.XPATH, '//button[contains(text(), "Submit")]')
         submit_button.click()
         time.sleep(5)
@@ -125,7 +116,7 @@ def leave_comment(coin_url):
         print(f"❌ Failed to post comment on {coin_url}. Error: {e}")
 
 def track_pump_fun():
-    """Logt in via de wallet en gaat dan de board monitoren."""
+    """Logt in via de wallet en gaat vervolgens de board monitoren."""
     login_with_wallet()
     while True:
         try:
