@@ -34,10 +34,6 @@ driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), opti
 tracked_coins = set()
 
 def login_with_wallet():
-    """
-    Automatiseert het inloggen met de Solana-wallet.
-    (Pas de XPaths en logica aan zodat ze overeenkomen met de daadwerkelijke pump.fun-pagina.)
-    """
     try:
         driver.get("https://pump.fun/login")
         login_button = WebDriverWait(driver, 10).until(
