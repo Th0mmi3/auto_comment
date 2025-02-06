@@ -1,7 +1,10 @@
+#!/usr/bin/env python3
 import time
 import logging
 import os
 import json
+import uuid
+import subprocess
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -9,30 +12,74 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-import uuid
 
+# --- Configuratie ---
 WALLET_FILE = "wallet.json"
+LOG_FILE = "pump_fun_tracker.log"
+# Indien je op een headless server werkt, zet HEADLESS op True
+HEADLESS = True
+
+# --- Logging setup ---
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+def kill_existing_chrome_processes():
+    """Probeert bestaande Chrome-processen te beëindigen om profielconflicten te vermijden."""
+    try:
+        logging.info("Killing existing Chrome processes...")
+        # pkill -f chrome kan agressief zijn, maar op een dedicated server is dat vaak acceptabel.
+        subprocess.run(["pkill", "-f", "chrome"], check=False)
+        time.sleep(2)  # Wacht even tot processen daadwerkelijk beëindigd zijn.
+    except Exception as e:
+        logging.error(f"Error killing Chrome processes: {e}")
+
+# --- Controleer of wallet.json aanwezig is ---
 if not os.path.exists(WALLET_FILE):
     raise Exception("Wallet file not found. Generate one using the wallet generator.")
+
 with open(WALLET_FILE, "r") as f:
-    wallet = json.load(f)
+    try:
+        wallet = json.load(f)
+    except json.JSONDecodeError as e:
+        raise Exception(f"Error decoding {WALLET_FILE}: {e}")
+
 SOLANA_PUBLIC_KEY = wallet.get("public_key")
 SOLANA_SECRET_KEY = wallet.get("secret_key")
+if not SOLANA_PUBLIC_KEY or not SOLANA_SECRET_KEY:
+    raise Exception("Invalid wallet.json: missing keys.")
 
-logging.basicConfig(filename="pump_fun_tracker.log", level=logging.INFO, format="%(asctime)s - %(message)s")
+# --- Selenium en Chrome setup ---
+kill_existing_chrome_processes()
 
 chrome_options = Options()
-profile_path = os.path.join(os.getcwd(), "selenium_profile")
-if not os.path.exists(profile_path):
-    os.makedirs(profile_path)
+# Kies een unieke gebruikersprofielmap om conflicten te voorkomen
 unique_profile = f"selenium_profile_{uuid.uuid4()}"
 profile_path = os.path.join(os.getcwd(), unique_profile)
 chrome_options.add_argument(f"--user-data-dir={profile_path}")
+
+# Zet opties om detectie te verminderen
 chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
 chrome_options.add_experimental_option("useAutomationExtension", False)
 
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+# Indien headless gewenst (voor servers zonder GUI)
+if HEADLESS:
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+
+# Extra beveiligingsopties kunnen hier worden toegevoegd
+
+# Installeer en start de driver
+try:
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+except Exception as e:
+    logging.error(f"Error initializing ChromeDriver: {e}")
+    raise
 
 tracked_coins = set()
 
@@ -52,8 +99,9 @@ def login_with_wallet():
         submit_button = driver.find_element(By.XPATH, '//button[contains(text(), "Submit")]')
         submit_button.click()
         time.sleep(5)
-        print(f"Logged in with Solana wallet {SOLANA_PUBLIC_KEY}")
-        logging.info(f"Logged in with Solana wallet {SOLANA_PUBLIC_KEY}")
+        msg = f"Logged in with Solana wallet {SOLANA_PUBLIC_KEY}"
+        print(msg)
+        logging.info(msg)
     except Exception as e:
         logging.error(f"Wallet login failed: {e}")
         print(f"Wallet login failed: {e}")
@@ -108,7 +156,8 @@ def leave_comment(coin_url):
         driver.execute_script("arguments[0].click();", post_reply_button_final)
         print(f"✅ Clicked 'Post reply' button for {coin_name}")
         time.sleep(3)
-        print(f"💬 Comment posted on {coin_name}: {comment_text}")
+        msg = f"💬 Comment posted on {coin_name}: {comment_text}"
+        print(msg)
         logging.info(f"Commented on {coin_name}: {comment_text}")
     except Exception as e:
         logging.error(f"Failed to post comment on {coin_url}: {e}")
@@ -133,4 +182,16 @@ def track_pump_fun():
             time.sleep(60)
 
 if __name__ == "__main__":
-    track_pump_fun()
+    try:
+        track_pump_fun()
+    except KeyboardInterrupt:
+        print("Script interrupted by user. Exiting...")
+        logging.info("Script interrupted by user.")
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+    finally:
+        # Zorg dat de driver netjes wordt afgesloten
+        try:
+            driver.quit()
+        except Exception:
+            pass
