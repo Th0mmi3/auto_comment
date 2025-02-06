@@ -9,6 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+import uuid
 
 WALLET_FILE = "wallet.json"
 if not os.path.exists(WALLET_FILE):
@@ -24,6 +25,8 @@ chrome_options = Options()
 profile_path = os.path.join(os.getcwd(), "selenium_profile")
 if not os.path.exists(profile_path):
     os.makedirs(profile_path)
+unique_profile = f"selenium_profile_{uuid.uuid4()}"
+profile_path = os.path.join(os.getcwd(), unique_profile)
 chrome_options.add_argument(f"--user-data-dir={profile_path}")
 chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
