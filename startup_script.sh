@@ -2,7 +2,7 @@
 
 # Configuratie
 REPO_DIR="/opt/repo"
-GITHUB_REPO="https://github.com/Th0mmi3/auto_comment.git"
+GITHUB_REPO="https://github.com/tr4m0ryp/auto_comment.git"
 SCRIPT_TO_RUN="wallet_generator.py"
 
 echo "Updating package lists..."
