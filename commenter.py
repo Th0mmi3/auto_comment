@@ -1,7 +1,21 @@
 #!/usr/bin/env python3
+import os
+import sys
+import atexit
+
+# --- Lock check ---
+LOCKFILE = "/tmp/commenter.lock"
+if os.path.exists(LOCKFILE):
+    print("Script draait al. Afsluiten...")
+    sys.exit(0)
+else:
+    with open(LOCKFILE, "w") as lockfile:
+        lockfile.write(str(os.getpid()))
+    # Zorg dat het lock-bestand wordt verwijderd bij afsluiten
+    atexit.register(lambda: os.remove(LOCKFILE) if os.path.exists(LOCKFILE) else None)
+
 import time
 import logging
-import os
 import json
 import uuid
 import subprocess
