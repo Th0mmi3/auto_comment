@@ -12,7 +12,7 @@ Je zult op dit profiel eerst moeten inloggen op pump.fun
 
 2. Voer het volgende command uit in je terminal om het profiel te openen
 ```
-start chrome --user-data-dir="C:\pad\naar\selenium_profile"
+start chrome --user-data-dir="C:\pad\naar\selenium_tprofile"
 ```
 3. Ga naar pump.fun en maak een account aan
 
